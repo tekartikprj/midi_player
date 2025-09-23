@@ -1,0 +1,11 @@
+.*
+!.gitignore
+pubspec_overrides.yaml
+pubspec.lock
+
+linux/
+windows/
+macos/
+ios/
+web/
+android/
