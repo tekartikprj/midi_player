@@ -1,4 +1,4 @@
-#import "MidiPlayerPlugin.h"
+#import "./include/tekartik_midi_player/MidiPlayerPlugin.h"
 #import <AVFoundation/AVFoundation.h>
 
 static bool _log = false;
@@ -87,12 +87,20 @@ static NSString *const _paramPlaying = @"playing";
     if (_log) {
         NSLog(@"Loading file player %@ %@", playerId, path);
     }
-
+    
     // Set the instruments
     NSURL * bankURL;
     
-    NSString *bankPath = [[NSBundle mainBundle] pathForResource:@"sounds" ofType:@"sf2"];
+#if SWIFT_PACKAGE
+    NSBundle *bundle = SWIFTPM_MODULE_BUNDLE;
+#else
+    NSBundle *bundle = [NSBundle bundleForClass:[self class]];
+#endif
+    NSString *bankPath = [bundle pathForResource:@"sounds" ofType:@"sf2"];
     
+    if (_log) {
+        NSLog(@"Loading bank %@", bankPath);
+    }
     if ([[NSFileManager defaultManager] fileExistsAtPath:bankPath])
     {
         bankURL = [NSURL fileURLWithPath:bankPath isDirectory:NO];
@@ -116,7 +124,7 @@ static NSString *const _paramPlaying = @"playing";
         player.playerId = playerId;
         _players[playerId] =  player;
         [avMidiPlayer prepareToPlay];
-    
+        
         if (_log) {
             NSLog(@"prepared file %@", playerId);
         }

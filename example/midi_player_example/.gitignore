@@ -19,10 +19,11 @@ pubspec.lock
 /.flutter-plugins-dependencies
 
 !/android/
-/ios/
+!/ios/
 /windows/
 /web/
 /macos/
 /linux/
 
 .metadata
+/ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
