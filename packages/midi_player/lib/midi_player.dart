@@ -6,6 +6,7 @@ import 'package:tekartik_midi_player/src/midi_player_linux.dart';
 
 import 'src/constant.dart';
 import 'src/midi_player_plugin.dart';
+
 //import 'package:meta/meta.dart';
 
 class Player {
