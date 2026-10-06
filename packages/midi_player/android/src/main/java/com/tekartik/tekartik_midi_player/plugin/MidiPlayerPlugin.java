@@ -182,7 +182,10 @@ public class MidiPlayerPlugin implements FlutterPlugin, MethodCallHandler {
                 }
                 Map<String, Object> map = new HashMap<>();
                 map.put(Constant.PARAM_ID, player.getId());
-                channel.invokeMethod(METHOD_ON_COMPLETE, map);
+                // null once detached from the engine
+                if (channel != null) {
+                    channel.invokeMethod(METHOD_ON_COMPLETE, map);
+                }
             }
         }, new MediaPlayer.OnSeekCompleteListener() {
             @Override
@@ -246,13 +249,15 @@ public class MidiPlayerPlugin implements FlutterPlugin, MethodCallHandler {
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
-        MidiPlayerPlugin instance = new MidiPlayerPlugin();
-        instance.onAttached(binding.getApplicationContext(), binding.getBinaryMessenger());
+        // Attach this instance, the one Flutter detaches later.
+        onAttached(binding.getApplicationContext(), binding.getBinaryMessenger());
     }
 
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
-        channel.setMethodCallHandler(null);
-        channel = null;
+        if (channel != null) {
+            channel.setMethodCallHandler(null);
+            channel = null;
+        }
     }
 }
