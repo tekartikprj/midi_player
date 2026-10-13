@@ -47,6 +47,8 @@ class Player {
       arguments[paramPath] = path;
       await midiPlayerPlugin.invokeMethod<void>(methodLoadFile, arguments);
       loaded = true;
+      // Registered to receive onComplete
+      midiPlayerPlugin.players[_id] = this;
     });
   }
 
@@ -54,8 +56,13 @@ class Player {
     await _lock.synchronized(() async {
       if (!closed) {
         closed = true;
-        var arguments = _newArguments;
-        await midiPlayerPlugin.invokeMethod<void>(methodClose, arguments);
+        try {
+          var arguments = _newArguments;
+          await midiPlayerPlugin.invokeMethod<void>(methodClose, arguments);
+        } finally {
+          midiPlayerPlugin.players.remove(_id);
+          await onCompleteController.close();
+        }
       }
     });
   }
@@ -70,51 +77,26 @@ class Player {
     });
   }
 
-  Future<int?> getDuration() async {
-    return await _lock.synchronized(() async {
+  /// Read [key] of the [method] result, [notReady] if not loaded or closed.
+  Future<T?> _invokeWhenReady<T>(String method, String key, {T? notReady}) {
+    return _lock.synchronized(() async {
       if (ready) {
         var arguments = _newArguments;
-        var map = await midiPlayerPlugin.invokeMethodMap(
-          methodDuration,
-          arguments,
-        );
-        return (map ?? {})[paramMillis] as int?;
+        var map = await midiPlayerPlugin.invokeMethodMap(method, arguments);
+        return (map ?? {})[key] as T?;
       }
-      return null;
+      return notReady;
     });
   }
 
-  Future<int?> getCurrentPosition() async {
-    return await _lock.synchronized(() async {
-      if (ready) {
-        var arguments = _newArguments;
-        var map = await midiPlayerPlugin.invokeMethodMap(
-          methodCurrentPosition,
-          arguments,
-        );
-        //int warn;
-        //print('map $map');
-        return (map ?? {})[paramMillis] as int?;
-      }
-      return null;
-    });
-  }
+  Future<int?> getDuration() =>
+      _invokeWhenReady<int>(methodDuration, paramMillis);
 
-  Future<bool?> isPlaying() async {
-    return await _lock.synchronized(() async {
-      if (ready) {
-        var arguments = _newArguments;
-        var map = await midiPlayerPlugin.invokeMethodMap(
-          methodPlaying,
-          arguments,
-        );
-        //int warn;
-        //print('map $map');
-        return (map ?? {})[paramPlaying] as bool?;
-      }
-      return false;
-    });
-  }
+  Future<int?> getCurrentPosition() =>
+      _invokeWhenReady<int>(methodCurrentPosition, paramMillis);
+
+  Future<bool?> isPlaying() =>
+      _invokeWhenReady<bool>(methodPlaying, paramPlaying, notReady: false);
 }
 
 class MidiPlayer {
@@ -124,6 +106,7 @@ class MidiPlayer {
   /// turn on debug mode if you want to see the SQL query
   /// executed natively
   static Future<dynamic> setDebugModeOn([bool on = true]) async {
+    _debugModeOn = on;
     await midiPlayerPlugin.invokeMethod<dynamic>(methodSetDebugModeOn, on);
   }
 
@@ -134,7 +117,6 @@ class MidiPlayer {
   // To use in code when you want to remove it later
   @Deprecated('Dev only')
   static Future devSetDebugModeOn([bool on = true]) {
-    _debugModeOn = on;
     return setDebugModeOn(on);
   }
 
@@ -151,7 +133,6 @@ class MidiPlayer {
 Future<Player> loadFile(String path) async {
   var player = Player();
   await player.loadFile(path);
-  midiPlayerPlugin.players[player._id] = player;
   return player;
 }
 
