@@ -29,11 +29,10 @@ first).
         url: https://github.com/tekartikprj/midi_player
         path: packages/midi_player
   ```
-  This is the maintained package. A package with the **same name** exists in
-  the `tekartikprj/milomedy` repo, whose library is annotated `@Deprecated` and
-  points here; if a project still depends on that one, switch the `url` and
-  drop the `// ignore: deprecated_member_use` comments (see the skill
-  `tekartik-midi-player-setup`).
+  This is the maintained package. An older copy with the **same name**, whose
+  library is annotated `@Deprecated` and points here, may still be used by old
+  projects: switch their `url` to this repo and drop the
+  `// ignore: deprecated_member_use` comments.
 * One import: `package:tekartik_midi_player/midi_player.dart`. Everything else
   (`MidiPlayerPlugin`, `midiPlayerPlugin`, the method-name constants, the
   `linuxPlayMidiFile*` helpers) lives under `lib/src/` - do not import it.
@@ -45,9 +44,10 @@ first).
   `sudo apt install timidity`). macOS and Windows raise
   `MissingPluginException`, and the library imports `dart:io`, so it does not
   build for web at all.
-* iOS: the `sounds.sf2` sound font ships in the pod resources, but as the
-  README says you must also add `sounds.sf2` as an asset in Xcode (drop it in
-  the Flutter/Runner section, added as a link), otherwise playback is silent.
+* iOS: the plugin bundles its `sounds.sf2` sound font (pod resources and the
+  Swift package `Assets`) and loads it from its own bundle: nothing to add in
+  Xcode. A load failing with `Loading sounds failed` means the font was not
+  bundled.
 * One-shot playback: `await playFile(path)` loads, plays, waits for the native
   `onComplete` and closes the player. On Linux it runs the external player and
   returns when that process exits. It never returns early, so do not use it for
@@ -73,7 +73,8 @@ first).
   sends a `load` call that no native side implements - write the bytes to a
   file and use `loadFile` instead. `mainPlayer` is a lazy `MidiPlayer`
   singleton kept for convenience.
-* Testing: the package has no `test/` - it needs a device. The runnable
+* Testing: `test/midi_player_test.dart` mocks the channel (load, close,
+  onComplete routing); real playback needs a device. The runnable
   reference is `example/midi_player_example`, a `tekartik_test_menu_flutter`
   menu app covering platform version, load / resume / pause / seek / duration
   / position and a 5 second play. In widget tests, mock the
